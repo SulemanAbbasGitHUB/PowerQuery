@@ -1,0 +1,80 @@
+File.Contents(Source)
+
+
+
+-- Importing several tables as a single table
+let
+    Source = (B02Parameter1 as any) => let
+        Source = B02Parameter1,
+        #"Trimmed Text" = Table.TransformColumns(Source,{{"Column1", Text.Trim, type text}}),
+        #"Promoted Headers" = Table.PromoteHeaders(#"Trimmed Text", [PromoteAllScalars=true]),
+        #"Added Conditional Column" = Table.AddColumn(#"Promoted Headers", "SalesRep", each if [Total Per Product] = null then [#"SalesRep/Product"] else null),
+        #"Added Conditional Column1" = Table.AddColumn(#"Added Conditional Column", "ProductColumn", each if [Total Per Product] = null then null else [#"SalesRep/Product"]),
+        #"Filled Down" = Table.FillDown(#"Added Conditional Column1",{"SalesRep"}),
+        #"Filtered Rows" = Table.SelectRows(#"Filled Down", each ([#"1/5/2020"] <> null)),
+        #"Filtered Rows1" = Table.SelectRows(#"Filtered Rows", each not Text.Contains([#"SalesRep/Product"], "Totals")),
+        #"Unpivoted Other Columns" = Table.UnpivotOtherColumns(#"Filtered Rows1", {"SalesRep", "ProductColumn"}, "Attribute", "Value")
+    in
+        #"Unpivoted Other Columns"
+in
+    Source
+
+
+
+
+
+
+-- Importing CSV files
+let
+    Source = Folder.Files("D:\backup of downloads\misc laptop\Practice\DAX and power Query\extracttion\29\Import-01-TxtCvsFiles\01StartFiles"),
+    #"Filtered Rows" = Table.SelectRows(Source, each ([Extension] = ".csv")),
+    #"Removed Other Columns" = Table.SelectColumns(#"Filtered Rows",{"Content"}),
+    #"Filtered Hidden Files1" = Table.SelectRows(#"Removed Other Columns", each [Attributes]?[Hidden]? <> true),
+    #"Invoke Custom Function1" = Table.AddColumn(#"Filtered Hidden Files1", "Transform File", each #"Transform File"([Content])),
+    #"Removed Other Columns1" = Table.SelectColumns(#"Invoke Custom Function1", {"Transform File"}),
+    #"Expanded Table Column1" = Table.ExpandTableColumn(#"Removed Other Columns1", "Transform File", Table.ColumnNames(#"Transform File"(#"Sample File"))),
+    #"Changed Type" = Table.TransformColumnTypes(#"Expanded Table Column1",{{"City", type text}, {"Date", type date}, {"Sales", Currency.Type}, {"StoreID", Int64.Type}}),
+    #"Filtered Rows1" = Table.SelectRows(#"Changed Type", each true)
+in
+    #"Filtered Rows1"
+
+
+
+--Importing Files from folder
+
+let
+    Source = Folder.Files("D:\backup of downloads\misc laptop\Practice\DAX and power Query\extracttion\32\Import-03-ExcelFilesMultipleSheetsEach"),
+    #"Removed Other Columns" = Table.SelectColumns(Source,{"Content", "Name"}),
+    #"Added Custom" = Table.AddColumn(#"Removed Other Columns", "Custom", each Excel.Workbook([Content])),
+    #"Replaced Value" = Table.ReplaceValue(#"Added Custom",".xlsx","",Replacer.ReplaceText,{"Name"}),
+    #"Removed Columns" = Table.RemoveColumns(#"Replaced Value",{"Content"}),
+    #"Expanded Custom" = Table.ExpandTableColumn(#"Removed Columns", "Custom", {"Name", "Data", "Item", "Kind", "Hidden"}, {"Custom.Name", "Custom.Data", "Custom.Item", "Custom.Kind", "Custom.Hidden"}),
+    #"Filtered Rows" = Table.SelectRows(#"Expanded Custom", each ([Custom.Kind] = "Sheet")),
+    #"Filtered Rows1" = Table.SelectRows(#"Filtered Rows", each not Text.Contains([Custom.Item], "Sheet")),
+    #"Expanded Custom.Data" = Table.ExpandTableColumn(#"Filtered Rows1", "Custom.Data", {"Column1", "Column2", "Column3"}, {"Custom.Data.Column1", "Custom.Data.Column2", "Custom.Data.Column3"}),
+    #"Promoted Headers" = Table.PromoteHeaders(#"Expanded Custom.Data", [PromoteAllScalars=true]),
+    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"GrainvilleStore", type text}, {"Gardenia", type text}, {"Date", type date}, {"Product", type text}, {"Sales", Int64.Type}, {"Gardenia_1", type text}, {"Sheet", type text}, {"false", type logical}})
+in
+    #"Changed Type"
+
+
+--Importing tables from folder
+
+let
+    Source = Folder.Files("D:\backup of downloads\misc laptop\Practice\DAX and power Query\extracttion\33\Import-04-ExcelNotProperDataSets\SurveyByDepartment"),
+    #"Removed Other Columns" = Table.SelectColumns(Source,{"Content"}),
+    #"Added Custom" = Table.AddColumn(#"Removed Other Columns", "Custom", each Excel.Workbook([Content])),
+    #"Expanded Custom" = Table.ExpandTableColumn(#"Added Custom", "Custom", {"Name", "Data", "Item", "Kind"}, {"Custom.Name", "Custom.Data", "Custom.Item", "Custom.Kind"}),
+    #"Expanded Custom.Data" = Table.ExpandTableColumn(#"Expanded Custom", "Custom.Data", {"Column1", "Column2", "Column3"}, {"Custom.Data.Column1", "Custom.Data.Column2", "Custom.Data.Column3"}),
+    #"Removed Columns" = Table.RemoveColumns(#"Expanded Custom.Data",{"Content"})
+in
+    #"Removed Columns"
+
+
+--Custom function
+
+(Input) =>
+let
+ #"Changed Type" = Table.TransformColumnTypes(Input,{{"Column1", type text}, {"Column2", type any}, {"Column3", type any}, {"Column4", type any}, {"Column5", type any}, {"Column6", type any}, {"Column7", type any}, {"Column8", type any}, {"Column9", type any}, {"Column10", type any}, {"Column11", type any}, {"Column12", type any}, {"Column13", type any}, {"Column14", type any}, {"Column15", type any}, {"Column16", type any}, {"Column17", type any}, {"Column18", type any}, {"Column19", type any}, {"Column20", type any}, {"Column21", type any}, {"Column22", type any}, {"Column23", type any}, {"Column24", type any}, {"Column25", type any}, {"Column26", type any}, {"Column27", type any}, {"Column28", type any}, {"Column29", type any}, {"Column30", type any}, {"Column31", type any}, {"Column32", type any}})
+in
+    #"Changed Type"
