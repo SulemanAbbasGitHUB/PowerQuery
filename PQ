@@ -78,3 +78,19 @@ let
  #"Changed Type" = Table.TransformColumnTypes(Input,{{"Column1", type text}, {"Column2", type any}, {"Column3", type any}, {"Column4", type any}, {"Column5", type any}, {"Column6", type any}, {"Column7", type any}, {"Column8", type any}, {"Column9", type any}, {"Column10", type any}, {"Column11", type any}, {"Column12", type any}, {"Column13", type any}, {"Column14", type any}, {"Column15", type any}, {"Column16", type any}, {"Column17", type any}, {"Column18", type any}, {"Column19", type any}, {"Column20", type any}, {"Column21", type any}, {"Column22", type any}, {"Column23", type any}, {"Column24", type any}, {"Column25", type any}, {"Column26", type any}, {"Column27", type any}, {"Column28", type any}, {"Column29", type any}, {"Column30", type any}, {"Column31", type any}, {"Column32", type any}})
 in
     #"Changed Type"
+
+
+-- Dynamic splits and count
+
+Table.AddColumn(Source, "Custom", each List.Count(Splitter.SplitTextByCharacterTransition({" "}, {"A".."Z"})([Text])))
+List.Max(#"Added Custom"[Custom])
+Table.SplitColumn(Source, "Text", Splitter.SplitTextByCharacterTransition({" "}, {"A".."Z"}), Custom1)
+
+
+-- Importing data as tables by removing unwanted columns
+Table.AddColumn(#"Filtered Rows", "Custom", (t) => Table.SelectColumns(t[Data],List.Select(Table.ColumnNames(t[Data]), (cn) => not Text.StartsWith(cn, "Column"))))
+Table.Combine(#"Added Custom"[Custom])
+
+--re ordering the above
+Table.AddColumn(#"Filtered Rows", "Custom", (t) => List.Select(Table.ColumnNames(t[Data]), (c) => not Text.StartsWith(c,"Column")))
+Table.AddColumn(#"Filtered Rows", "Custom", (t) => Table.SelectColumns(t[Data], List.Select(Table.ColumnNames(t[Data]), (cn) => not Text.StartsWith(cn,"Column"))))
