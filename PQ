@@ -144,6 +144,7 @@ in
 
 -- then next step (due to approximate match use of OT and OT with Table.SelectRows)
 Table.AddColumn(#"Merged Queries", "Custom", (OT) => List.Last(Table.SelectRows(OT[ProductsUnitsPrice], (IT) => IT[Units]<=OT[Units])[Price]))
+
 --OR
 let
     Source = Excel.CurrentWorkbook(){[Name="f2ndUnits"]}[Content],
@@ -151,4 +152,38 @@ let
     #"Merged Queries" = Table.NestedJoin(#"Changed Type", {"ProductID"}, ProductsUnitsPrice, {"ProductID"}, "ProductsUnitsPrice", JoinKind.LeftOuter),
     #"Added Custom" = Table.AddColumn(#"Merged Queries", "Custom", (OT) => List.Last(Table.SelectRows(OT[ProductsUnitsPrice], (IT) => IT[Units]<=OT[Units])[Price]))
 in
+
+
+-- Buffer Table and running count
+(Trick in this code is "(IT) => IT[Transaction No] <= OT[Transaction No]" cancelling effect because of buffer (table that can create count))
+let
+    Source = Excel.CurrentWorkbook(){[Name="ProductStartTable"]}[Content],
+    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Transaction No", Int64.Type}, {"Product", type text}}),
+    #"Sorted Rows" = Table.Sort(#"Changed Type",{{"Transaction No", Order.Ascending}}),
+    Custom1 = Table.Buffer(#"Sorted Rows"),
+    #"Added Custom" = Table.AddColumn(Custom1, "Custom", (OT) => Table.RowCount(Table.SelectRows(Custom1, (IT) => IT[Transaction No] <= OT[Transaction No] and IT[Product] = OT[Product])))
+in
     #"Added Custom"
+    
+
+
+
+-- Combining Text in a single cell (trick is to watch closely where code is added inside bracket)
+let
+    Source = Excel.CurrentWorkbook(){[Name="Invoices"]}[Content],
+    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Vendor", Int64.Type}, {"Invoice", Int64.Type}, {"Reference", Int64.Type}}),
+    #"Grouped Rows" = Table.Group(Source, {"Vendor", "Invoice"}, {{"Reference", each Text.Combine(List.Transform(List.Distinct([Reference]), Text.From), ", ")}})
+in
+    #"Grouped Rows"
+
+
+--Table.Max Function with an additional argument required
+let
+    Source = Excel.CurrentWorkbook(){[Name="Sales"]}[Content],
+    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Date", type datetime}, {"Product", type text}, {"Sales Rep", type text}, {"Units Sold", Int64.Type}}),
+    #"Removed Columns" = Table.RemoveColumns(#"Changed Type",{"Date"}),
+    #"Grouped Rows" = Table.Group(#"Removed Columns", {"Product"}, {{"Count", each List.Sum([Units Sold]), type nullable number}, {"Records", each _, type table [Product=nullable text, Sales Rep=nullable text, Units Sold=nullable number]}}),
+    #"Added Custom" = Table.AddColumn(#"Grouped Rows", "Custom", each Table.Max([Records],"Units Sold")),
+    #"Expanded Custom" = Table.ExpandRecordColumn(#"Added Custom", "Custom", {"Sales Rep", "Units Sold"}, {"Custom.Sales Rep", "Custom.Units Sold"})
+in
+    #"Expanded Custom"
