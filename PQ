@@ -143,12 +143,12 @@ in
     #"Changed Type1"
 
 -- then next step (due to approximate match use of OT and OT with Table.SelectRows)
-Table.AddColumn(#"Merged Queries", "Custom", (OT) => Table.SelectRows(OT[ProductsUnitsPrice], (IT) => IT[Units]<=OT[Units]))
+Table.AddColumn(#"Merged Queries", "Custom", (OT) => List.Last(Table.SelectRows(OT[ProductsUnitsPrice], (IT) => IT[Units]<=OT[Units])[Price]))
 --OR
 let
     Source = Excel.CurrentWorkbook(){[Name="f2ndUnits"]}[Content],
     #"Changed Type" = Table.TransformColumnTypes(Source,{{"ProductID", type text}, {"Units", Int64.Type}}),
     #"Merged Queries" = Table.NestedJoin(#"Changed Type", {"ProductID"}, ProductsUnitsPrice, {"ProductID"}, "ProductsUnitsPrice", JoinKind.LeftOuter),
-    #"Added Custom" = Table.AddColumn(#"Merged Queries", "Custom", (OT) => Table.SelectRows(OT[ProductsUnitsPrice], (IT) => IT[Units]<=OT[Units]))
+    #"Added Custom" = Table.AddColumn(#"Merged Queries", "Custom", (OT) => List.Last(Table.SelectRows(OT[ProductsUnitsPrice], (IT) => IT[Units]<=OT[Units])[Price]))
 in
     #"Added Custom"
