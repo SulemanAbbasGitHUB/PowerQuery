@@ -111,3 +111,22 @@ Table.AddColumn(#"Filtered Rows", "Custom", (t) => Table.SelectColumns(t[Data],L
 
 
 
+-- filtering table with just column/list
+= Table.TransformColumnTypes(Source,{{"Column1", type text}}){0}[Column1]
+Table.SelectRows(#"Changed Type", each not Text.Contains([Country], "xxx"))
+Table.SelectRows(#"Changed Type", each Text.Contains(Table3, [Country]))
+
+--extracion by matching lists (Not NOT is fully capitalized)
+Excel.CurrentWorkbook(){[Name="NotCriteria"]}[Content][NOTCriteria]
+List.Buffer(Source)
+Table.AddColumn(#"Changed Type", "Custom", each List.Intersect({Text.Split([Product_Name]," "),NotCriteria})) (have to remove "Custom")
+Table.SelectRows(#"Changed Type", each List.IsEmpty(List.Intersect({Text.Split([Product_Name]," "),NotCriteria})))
+
+--Another Method
+Splitter.SplitTextByAnyDelimiter(NotCriteria)
+= Table.AddColumn(#"Changed Type", "Custom", each Splitter.SplitTextByAnyDelimiter(NotCriteria)([Product_Name]))
+Table.AddColumn(#"Changed Type", "Custom", each List.Count(Splitter.SplitTextByAnyDelimiter(NotCriteria)([Product_Name]))=1)
+Table.SelectRows(#"Changed Type", each List.Count(Splitter.SplitTextByAnyDelimiter(NotCriteria)([Product_Name]))=1)
+
+
+Table.AddColumn(#"AddedIndex", "Custom", each AddedIndex{[Index]}[GE Close]) (Note {} is outside of [])
