@@ -88,9 +88,26 @@ Table.SplitColumn(Source, "Text", Splitter.SplitTextByCharacterTransition({" "},
 
 
 -- Importing data as tables by removing unwanted columns
+= File.Contents(Excel.CurrentWorkbook(){[Name="FilePath"]}[Content]{0}[Column1])
 Table.AddColumn(#"Filtered Rows", "Custom", (t) => Table.SelectColumns(t[Data],List.Select(Table.ColumnNames(t[Data]), (cn) => not Text.StartsWith(cn, "Column"))))
 Table.Combine(#"Added Custom"[Custom])
 
 --re ordering the above
+= File.Contents(Excel.CurrentWorkbook(){[Name="FilePath"]}[Content]{0}[Column1])
+-First step
 Table.AddColumn(#"Filtered Rows", "Custom", (t) => List.Select(Table.ColumnNames(t[Data]), (c) => not Text.StartsWith(c,"Column")))
+-Second step
 Table.AddColumn(#"Filtered Rows", "Custom", (t) => Table.SelectColumns(t[Data], List.Select(Table.ColumnNames(t[Data]), (cn) => not Text.StartsWith(cn,"Column"))))
+
+--another varianion, by ignoring column1
+ Table.AddColumn(#"Filtered Rows", "Custom", (t) => List.Select(Table.ColumnNames(t[Data]), (c) => not Text.StartsWith(c, "Column1")))
+
+
+--better and final (Importing data as tables by removing unwanted columns)
+File.Contents(Excel.CurrentWorkbook(){[Name="FilePath"]}[Content]{0}[Column1])
+ Excel.Workbook(FilePath, true) -- (true argument really differentiates between successful application and otherwise)
+Table.AddColumn(#"Filtered Rows", "Custom", (t) => Table.SelectColumns(t[Data],List.Select(Table.ColumnNames(t[Data]), (c) => not Text.StartsWith(c,"Column"))))
+
+
+
+
