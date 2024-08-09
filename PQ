@@ -130,3 +130,25 @@ Table.SelectRows(#"Changed Type", each List.Count(Splitter.SplitTextByAnyDelimit
 
 
 Table.AddColumn(#"AddedIndex", "Custom", each AddedIndex{[Index]}[GE Close]) (Note {} is outside of [])
+
+
+-- Approximate Match (unpivoting and changing data type)
+let
+    Source = Excel.CurrentWorkbook(){[Name="ProductsUnitsPrice"]}[Content],
+    #"Changed Type" = Table.TransformColumnTypes(Source,{{"ProductID", type text}, {"Product/Quantity", type text}, {"0", type number}, {"2", type number}, {"4", type number}}),
+    #"Unpivoted Columns" = Table.UnpivotOtherColumns(#"Changed Type", {"ProductID", "Product/Quantity"}, "Attribute", "Value"),
+    #"Renamed Columns" = Table.RenameColumns(#"Unpivoted Columns",{{"Value", "Price"}, {"Attribute", "Units"}, {"Product/Quantity", "Quantity"}}),
+    #"Changed Type1" = Table.TransformColumnTypes(#"Renamed Columns",{{"Units", Int64.Type}})
+in
+    #"Changed Type1"
+
+-- then next step (due to approximate match use of OT and OT with Table.SelectRows)
+Table.AddColumn(#"Merged Queries", "Custom", (OT) => Table.SelectRows(OT[ProductsUnitsPrice], (IT) => IT[Units]<=OT[Units]))
+--OR
+let
+    Source = Excel.CurrentWorkbook(){[Name="f2ndUnits"]}[Content],
+    #"Changed Type" = Table.TransformColumnTypes(Source,{{"ProductID", type text}, {"Units", Int64.Type}}),
+    #"Merged Queries" = Table.NestedJoin(#"Changed Type", {"ProductID"}, ProductsUnitsPrice, {"ProductID"}, "ProductsUnitsPrice", JoinKind.LeftOuter),
+    #"Added Custom" = Table.AddColumn(#"Merged Queries", "Custom", (OT) => Table.SelectRows(OT[ProductsUnitsPrice], (IT) => IT[Units]<=OT[Units]))
+in
+    #"Added Custom"
